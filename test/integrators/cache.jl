@@ -31,7 +31,7 @@ function affect!(integrator)
 end
 
 const prob = DDEProblem(f, [0.2], nothing, (0.0, 10.0);
-                        callback = ContinuousCallback(condition, affect!))
+    callback = ContinuousCallback(condition, affect!))
 
 println("Check for stochastic errors")
 for i in 1:10
@@ -41,15 +41,14 @@ end
 println("Check some other integrators")
 
 println("Rosenbrock23")
-@test_nowarn solve(prob, MethodOfSteps(Rosenbrock23(chunk_size = 1)); dt = 0.5)
+@test_nowarn solve(prob, MethodOfSteps(Rosenbrock23()); dt = 0.5)
 
-for alg in CACHE_TEST_ALGS
-    println(nameof(typeof(alg)))
+@testset "$(nameof(typeof(alg)))" for alg in CACHE_TEST_ALGS
     @test_nowarn solve(prob, MethodOfSteps(alg); dt = 0.5)
 end
 
 println("Rodas4")
-@test_nowarn solve(prob, MethodOfSteps(Rodas4(chunk_size = 1)); dt = 0.5)
+@test_nowarn solve(prob, MethodOfSteps(Rodas4()); dt = 0.5)
 
 println("Rodas5")
-@test_nowarn solve(prob, MethodOfSteps(Rodas5(chunk_size = 1)); dt = 0.5)
+@test_nowarn solve(prob, MethodOfSteps(Rodas5()); dt = 0.5)

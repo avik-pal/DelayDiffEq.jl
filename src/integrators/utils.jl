@@ -35,11 +35,11 @@ function advance_ode_integrator!(integrator::DDEIntegrator, always_calc_begin = 
     # has to be done before updates to ODE integrator, otherwise history function
     # is incorrect
     if iscomposite(alg)
-        _ode_addsteps!(k, t, uprev, u, dt, f, p, cache.caches[cache.current],
-                       always_calc_begin, true, true)
+        OrdinaryDiffEqCore._ode_addsteps!(k, t, uprev, u, dt, f, p, cache.caches[cache.current],
+            always_calc_begin, true, true)
     else
-        _ode_addsteps!(k, t, uprev, u, dt, f, p, cache, always_calc_begin,
-                       true, true)
+        OrdinaryDiffEqCore._ode_addsteps!(k, t, uprev, u, dt, f, p, cache, always_calc_begin,
+            true, true)
     end
     @inbounds for i in 1:length(k)
         copyat_or_push!(ode_integrator.k, i, k[i])
@@ -82,11 +82,11 @@ function update_ode_integrator!(integrator::DDEIntegrator, always_calc_begin = f
     ode_integrator.t != t + dt && error("cannot update ODE integrator")
 
     if iscomposite(alg)
-        _ode_addsteps!(k, t, uprev, u, dt, f, p, cache.caches[cache.current],
-                       always_calc_begin, true, true)
+        OrdinaryDiffEqCore._ode_addsteps!(k, t, uprev, u, dt, f, p, cache.caches[cache.current],
+            always_calc_begin, true, true)
     else
-        _ode_addsteps!(k, t, uprev, u, dt, f, p, cache,
-                       always_calc_begin, true, true)
+        OrdinaryDiffEqCore._ode_addsteps!(k, t, uprev, u, dt, f, p, cache,
+            always_calc_begin, true, true)
     end
     @inbounds for i in 1:length(k)
         copyat_or_push!(ode_integrator.k, i, k[i])
@@ -156,34 +156,34 @@ discontinuities that are checked by a `DiscontinuityCallback` (if existent).
 =#
 
 # handle discontinuities at the current time point of the `integrator`
-function OrdinaryDiffEq.handle_discontinuities!(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.handle_discontinuities!(integrator::DDEIntegrator)
     # remove all discontinuities at current time point and calculate minimal order
     # of these discontinuities
-    d = OrdinaryDiffEq.pop_discontinuity!(integrator)
+    d = OrdinaryDiffEqCore.pop_discontinuity!(integrator)
     order = d.order
     tdir_t = integrator.tdir * integrator.t
-    while OrdinaryDiffEq.has_discontinuity(integrator) &&
-        OrdinaryDiffEq.first_discontinuity(integrator) == tdir_t
-        d2 = OrdinaryDiffEq.pop_discontinuity!(integrator)
+    while OrdinaryDiffEqCore.has_discontinuity(integrator) &&
+        OrdinaryDiffEqCore.first_discontinuity(integrator) == tdir_t
+        d2 = OrdinaryDiffEqCore.pop_discontinuity!(integrator)
         order = min(order, d2.order)
     end
 
     # remove all discontinuities close to the current time point as well and
     # calculate minimal order of these discontinuities
     # integrator.EEst has unitless type of integrator.t
-    if typeof(integrator.EEst) <: AbstractFloat
+    if integrator.EEst isa AbstractFloat
         maxΔt = 10eps(integrator.t)
 
-        while OrdinaryDiffEq.has_discontinuity(integrator) &&
-            abs(OrdinaryDiffEq.first_discontinuity(integrator).t - tdir_t) < maxΔt
-            d2 = OrdinaryDiffEq.pop_discontinuity!(integrator)
+        while OrdinaryDiffEqCore.has_discontinuity(integrator) &&
+            abs(OrdinaryDiffEqCore.first_discontinuity(integrator).t - tdir_t) < maxΔt
+            d2 = OrdinaryDiffEqCore.pop_discontinuity!(integrator)
             order = min(order, d2.order)
         end
 
         # also remove all corresponding time stops
-        while OrdinaryDiffEq.has_tstop(integrator) &&
-            abs(OrdinaryDiffEq.first_tstop(integrator) - tdir_t) < maxΔt
-            OrdinaryDiffEq.pop_tstop!(integrator)
+        while OrdinaryDiffEqCore.has_tstop(integrator) &&
+            abs(OrdinaryDiffEqCore.first_tstop(integrator) - tdir_t) < maxΔt
+            OrdinaryDiffEqCore.pop_tstop!(integrator)
         end
     end
 
@@ -208,7 +208,7 @@ function add_next_discontinuities!(integrator, order, t = integrator.t)
     next_order = neutral ? order : order + 1
 
     # only track discontinuities up to order of the applied method
-    alg_maximum_order = OrdinaryDiffEq.alg_maximum_order(integrator.alg)
+    alg_maximum_order = OrdinaryDiffEqCore.alg_maximum_order(integrator.alg)
     next_order <= alg_maximum_order + 1 || return
 
     # discontinuities caused by constant lags
@@ -233,27 +233,27 @@ function add_next_discontinuities!(integrator, order, t = integrator.t)
 end
 
 # Interface for accessing and removing next time stops and discontinuities
-function OrdinaryDiffEq.has_tstop(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.has_tstop(integrator::DDEIntegrator)
     return _has(integrator.opts.tstops, integrator.tstops_propagated)
 end
-function OrdinaryDiffEq.first_tstop(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.first_tstop(integrator::DDEIntegrator)
     return _first(integrator.opts.tstops, integrator.tstops_propagated)
 end
-function OrdinaryDiffEq.pop_tstop!(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.pop_tstop!(integrator::DDEIntegrator)
     return _pop!(integrator.opts.tstops, integrator.tstops_propagated)
 end
 
-function OrdinaryDiffEq.has_discontinuity(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.has_discontinuity(integrator::DDEIntegrator)
     return _has(integrator.opts.d_discontinuities,
-                integrator.d_discontinuities_propagated)
+        integrator.d_discontinuities_propagated)
 end
-function OrdinaryDiffEq.first_discontinuity(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.first_discontinuity(integrator::DDEIntegrator)
     return _first(integrator.opts.d_discontinuities,
-                  integrator.d_discontinuities_propagated)
+        integrator.d_discontinuities_propagated)
 end
-function OrdinaryDiffEq.pop_discontinuity!(integrator::DDEIntegrator)
+function OrdinaryDiffEqCore.pop_discontinuity!(integrator::DDEIntegrator)
     return _pop!(integrator.opts.d_discontinuities,
-                 integrator.d_discontinuities_propagated)
+        integrator.d_discontinuities_propagated)
 end
 
 _has(x, y) = !isempty(x) || !isempty(y)

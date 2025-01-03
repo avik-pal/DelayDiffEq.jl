@@ -2,7 +2,7 @@ using DelayDiffEq, DDEProblemLibrary
 using LinearAlgebra, Test, LinearSolve
 
 const PROB_WALTMAN = DDEProblemLibrary.prob_dde_RADAR5_waltman_5
-const PROB_KWARGS = (reltol = 1e-6, abstol = [1e-21, 1e-21, 1e-21, 1e-21, 1e-9, 1e-9])
+const PROB_KWARGS = (reltol = 1e-7, abstol = [1e-21, 1e-21, 1e-21, 1e-21, 1e-9, 1e-9])
 
 # solution at final time point T = 300 obtained from RADAR5
 # with relative tolerance 1e-6 and componentwise absolute tolerances
@@ -21,18 +21,19 @@ function test_waltman_sol(sol)
 end
 
 # standard factorization
-sol1 = solve(PROB_WALTMAN, MethodOfSteps(Rosenbrock23()); PROB_KWARGS...)
+sol1 = solve(PROB_WALTMAN, MethodOfSteps(Rodas5P()); PROB_KWARGS...)
 test_waltman_sol(sol1)
 
 # in-place LU factorization
 sol2 = solve(PROB_WALTMAN,
-             MethodOfSteps(Rosenbrock23(linsolve = GenericFactorization(lu!)));
-             PROB_KWARGS...)
+    MethodOfSteps(Rodas5P(linsolve = GenericFactorization(lu!)));
+    PROB_KWARGS...)
 test_waltman_sol(sol2)
 
 # out-of-place LU factorization
-sol3 = solve(PROB_WALTMAN, MethodOfSteps(Rosenbrock23(linsolve = GenericFactorization(lu)));
-             PROB_KWARGS...)
+sol3 = solve(
+    PROB_WALTMAN, MethodOfSteps(Rodas5P(linsolve = GenericFactorization(lu)));
+    PROB_KWARGS...)
 test_waltman_sol(sol3)
 
 # compare in-place and out-of-place LU factorization
